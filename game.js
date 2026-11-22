@@ -17,21 +17,21 @@
 
 const ASSETS = {
   images: {
-    field:      "assets/images/field.png",      // 배경 (960x600 권장)
-    player:     "assets/images/player.png",     // 플레이어 (정면, 오른쪽을 보는 이미지 권장)
-    minion:     "assets/images/minion.png",     // 자라는 미니언
-    shopkeeper: "assets/images/shopkeeper.png", // 상점 주인
+    field:      "./assets/images/field.png",      // 배경 (960x600 권장)
+    player:     "./assets/images/player.png",     // 플레이어 (정면, 오른쪽을 보는 이미지 권장)
+    minion:     "./assets/images/minion.png",     // 자라는 미니언
+    shopkeeper: "./assets/images/shopkeeper.png", // 상점 주인
   },
   itemIcons: {                                  // 상점 창 아이콘
-    spellblade: "assets/images/item_spellblade.png",
-    hammer:     "assets/images/item_hammer.png",
-    axe:        "assets/images/item_axe.png",
-    trinity:    "assets/images/item_trinity.png",
+    spellblade: "./assets/images/item_spellblade.png",
+    hammer:     "./assets/images/item_hammer.png",
+    axe:        "./assets/images/item_axe.png",
+    trinity:    "./assets/images/item_trinity.png",
   },
   sounds: {
-    swing:  "assets/sounds/swing.mp3",   // 휘두르는 소리
-    hit:    "assets/sounds/hit.mp3",     // 타격음
-    buy:    "assets/sounds/buy.mp3",     // 구매 소리
+    swing:  "./assets/sounds/swing.mp3",   // 휘두르는 소리
+    hit:    "./assets/sounds/hit.mp3",     // 타격음
+    buy:    "./assets/sounds/buy.mp3",     // 구매 소리
   },
 };
 
