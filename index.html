@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>농사 게임</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="wrap">
+    <canvas id="game" width="960" height="600"></canvas>
+
+    <!-- 상단 HUD -->
+    <div id="hud">
+      <div id="gold">💰 <span id="goldText">0</span></div>
+      <div id="cdBox"><div id="cdBar"></div><span id="cdText">수확 준비 완료</span></div>
+      <div id="inv"></div>
+    </div>
+    <div id="hint">WASD 이동 · 좌클릭 수확 · 우클릭 상호작용(상점 주인)</div>
+
+    <!-- 상점 창 -->
+    <div id="shop" class="hidden">
+      <div class="panel">
+        <div class="panelHead">
+          <h2>🛒 상점</h2>
+          <button id="shopClose">✕</button>
+        </div>
+        <div id="shopGold">보유 골드: <b id="shopGoldText">0</b></div>
+        <ul id="shopList"></ul>
+        <p class="note">구매 순서: 1 → 2 → 3 → 4 (중복 구매 불가)</p>
+      </div>
+    </div>
+
+    <!-- 엔딩 -->
+    <div id="ending" class="hidden">
+      <div class="panel endPanel">
+<p class="endStory">삼위일체를 1코어로 뽑은 당신은 게임 후반에 Q스킬 스택을 2000스택 이상 쌓았고,
+그 누구도 막을 수 없는 진정한 왕귀챔의 후반을 보여주었습니다.
+하지만 당신의 같은 팀 바텀 라이너는 거의 다 이긴 게임을 무지성 돌격으로 말아먹었고,
+그렇게 당신이 쌓은 2000스택과 넥서스는 무너지고 말았습니다.</p>
+        <h1 class="endTitle">Bad Ending</h1>
+        <p class="endQuote">"원딜 차이"</p>
+        <button id="restart">다시 하기</button>
+      </div>
+    </div>
+  </div>
+  <!-- 모바일 세로 모드 안내 -->
+  <div id="rotate">📱 화면을 가로로 돌려 주세요</div>
+  <script src="game.js"></script>
+</body>
+</html>
