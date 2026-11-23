@@ -38,10 +38,10 @@ const ASSETS = {
 /* ---------------- 게임 설정값 ---------------- */
 const CFG = {
   baseCooldown: 3,        // 수확 기본 쿨타임(초)
-  spellbladeCdCut: 1.5,   // 주문 검: 쿨타임 감소량
+  spellbladeCdCut: 2,   // 주문 검: 쿨타임 감소량
   baseSpeed: 200,         // 기본 이동속도(px/s)
   hammerSpeedMul: 1.5,    // 탐식의 망치: 이동속도 +50%
-  baseGold: 11,           // 미니언 1마리당 골드
+  baseGold: 33,           // 미니언 1마리당 골드
   axeGoldMul: 3,          // 온기가 필요한 자의 도끼: 골드 3배
   castTime: 0.3,          // 공격 캐스팅 시간(초)
   harvestRange: 120,      // 수확 가능 거리
