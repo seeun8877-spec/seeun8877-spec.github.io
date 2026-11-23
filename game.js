@@ -17,31 +17,31 @@
 
 const ASSETS = {
   images: {
-    field:      "./assets/images/field.png",      // 배경 (960x600 권장)
-    player:     "./assets/images/player.png",     // 플레이어 (정면, 오른쪽을 보는 이미지 권장)
-    minion:     "./assets/images/minion.png",     // 자라는 미니언
-    shopkeeper: "./assets/images/shopkeeper.png", // 상점 주인
+    field:      "assets/images/field.png",      // 배경 (960x600 권장)
+    player:     "assets/images/player.png",     // 플레이어 (정면, 오른쪽을 보는 이미지 권장)
+    minion:     "assets/images/minion.png",     // 자라는 미니언
+    shopkeeper: "assets/images/shopkeeper.png", // 상점 주인
   },
   itemIcons: {                                  // 상점 창 아이콘
-    spellblade: "./assets/images/item_spellblade.png",
-    hammer:     "./assets/images/item_hammer.png",
-    axe:        "./assets/images/item_axe.png",
-    trinity:    "./assets/images/item_trinity.png",
+    spellblade: "assets/images/item_spellblade.png",
+    hammer:     "assets/images/item_hammer.png",
+    axe:        "assets/images/item_axe.png",
+    trinity:    "assets/images/item_trinity.png",
   },
   sounds: {
-    swing:  "./assets/sounds/swing.mp3",   // 휘두르는 소리
-    hit:    "./assets/sounds/hit.mp3",     // 타격음
-    buy:    "./assets/sounds/buy.mp3",     // 구매 소리
+    swing:  "assets/sounds/swing.mp3",   // 휘두르는 소리
+    hit:    "assets/sounds/hit.mp3",     // 타격음
+    buy:    "assets/sounds/buy.mp3",     // 구매 소리
   },
 };
 
 /* ---------------- 게임 설정값 ---------------- */
 const CFG = {
   baseCooldown: 3,        // 수확 기본 쿨타임(초)
-  spellbladeCdCut: 2,   // 주문 검: 쿨타임 감소량
+  spellbladeCdCut: 1.5,   // 주문 검: 쿨타임 감소량
   baseSpeed: 200,         // 기본 이동속도(px/s)
   hammerSpeedMul: 1.5,    // 탐식의 망치: 이동속도 +50%
-  baseGold: 33,           // 미니언 1마리당 골드
+  baseGold: 11,           // 미니언 1마리당 골드
   axeGoldMul: 3,          // 온기가 필요한 자의 도끼: 골드 3배
   castTime: 0.3,          // 공격 캐스팅 시간(초)
   harvestRange: 120,      // 수확 가능 거리
@@ -63,6 +63,8 @@ const W = canvas.width, H = canvas.height;
 
 const keys = {};
 const mouse = { x: W / 2, y: H / 2 };
+let rightDown = false;      // 우클릭을 누르고 있는 중인지 (누르고 있으면 계속 따라감)
+let lastButtons = 0;        // 직전 마우스 버튼 상태 (다른 버튼을 누른 채 누르는 경우 감지용)
 
 window.addEventListener("keydown", e => {
   keys[e.key.toLowerCase()] = true;
@@ -100,8 +102,22 @@ canvas.addEventListener("pointermove", e => {
     return;
   }
   mouse.x = p.x; mouse.y = p.y;
+
+  // 우클릭을 누른 채 좌클릭(또는 반대)하면 브라우저가 pointerdown 대신 pointermove로 알려줌
+  const nb = e.buttons;
+  if (!state.shopOpen && !state.ended) {
+    if ((nb & 1) && !(lastButtons & 1)) tryHarvest();
+    if ((nb & 2) && !(lastButtons & 2)) { rightDown = true; tryInteract(); }
+  }
+  lastButtons = nb;
 });
 canvas.addEventListener("pointerup", releaseJoy);
+window.addEventListener("pointerup", e => {
+  if (e.pointerType !== "mouse") return;
+  if (e.button === 2) rightDown = false;
+  lastButtons = e.buttons;
+});
+window.addEventListener("blur", () => { rightDown = false; });
 canvas.addEventListener("pointercancel", releaseJoy);
 canvas.addEventListener("contextmenu", e => e.preventDefault()); // 우클릭 메뉴 막기
 
@@ -131,11 +147,12 @@ canvas.addEventListener("pointerdown", e => {
     return;
   }
 
-  // 마우스: 좌클릭 수확 / 우클릭 상호작용
+  // 마우스: 좌클릭 수확 / 우클릭 이동·상호작용 (롤 방식)
   mouse.x = p.x; mouse.y = p.y;
   if (state.shopOpen || state.ended) return;
   if (e.button === 0) tryHarvest();
-  else if (e.button === 2) tryInteract();
+  else if (e.button === 2) { rightDown = true; tryInteract(); }
+  lastButtons = e.buttons;
 });
 
 /* ---------------- 이미지 로드 ---------------- */
@@ -286,6 +303,9 @@ function hoveredPlot() {
 function tryHarvest() {
   if (state.cooldownLeft > 0 || state.cast) return;
 
+  // 공격하면 이동 명령을 취소하고 멈춤 (롤 방식)
+  player.target = null; player.toKeeper = false;
+
   const angle = Math.atan2(mouse.y - player.y, mouse.x - player.x);
   player.facing = angle;
 
@@ -300,10 +320,50 @@ function tryHarvest() {
   playSound("swing");
 }
 
+/* ----- 클릭 이동 (롤 방식) ----- */
+function overKeeper() {
+  return Math.hypot(mouse.x - keeper.x, mouse.y - keeper.y) < 45;
+}
+function nearKeeper() {
+  return Math.hypot(player.x - keeper.x, player.y - keeper.y) < CFG.interactRange;
+}
+function orderMove(x, y, toKeeper) {
+  // 갈 수 없는 구역(화면 밖)을 찍어도 가장자리까지만 가도록 보정
+  x = Math.max(player.r, Math.min(W - player.r, x));
+  y = Math.max(player.r + 40, Math.min(H - player.r, y));
+  player.target = { x, y };
+  player.toKeeper = toKeeper;
+  clickMarker = { x, y, t: 0.5 };
+}
+
+// 우클릭(또는 상점 주인 탭): 상점 주인이면 걸어가서 상점 열기, 땅이면 그 지점으로 이동
 function tryInteract() {
-  const overKeeper = Math.hypot(mouse.x - keeper.x, mouse.y - keeper.y) < 45;
-  const near = Math.hypot(player.x - keeper.x, player.y - keeper.y) < CFG.interactRange;
-  if (overKeeper && near) openShop();
+  if (overKeeper()) {
+    if (nearKeeper()) { player.target = null; player.toKeeper = false; openShop(); }
+    else orderMove(keeper.x, keeper.y, true);
+  } else {
+    orderMove(mouse.x, mouse.y, false);
+  }
+}
+
+function moveToTarget(dt) {
+  // 우클릭을 누르고 있으면 마우스를 계속 따라감
+  if (rightDown && !overKeeper()) orderMove(mouse.x, mouse.y, false);
+
+  // 상점 주인을 향해 가는 중이면 가까워졌을 때 상점 열기
+  if (player.toKeeper && nearKeeper() && Math.hypot(player.x - keeper.x, player.y - keeper.y) < CFG.interactRange - 10) {
+    player.target = null; player.toKeeper = false;
+    openShop();
+    return;
+  }
+
+  const t = player.target;
+  if (!t) return;
+  const d = Math.hypot(t.x - player.x, t.y - player.y);
+  const step = currentSpeed() * dt;
+  if (d <= step) { player.x = t.x; player.y = t.y; player.target = null; return; }
+  player.x += (t.x - player.x) / d * step;
+  player.y += (t.y - player.y) / d * step;
 }
 
 /* ---------------- 상점 UI ---------------- */
@@ -313,7 +373,7 @@ const shopListEl = document.getElementById("shopList");
 function itemIconHTML(it) {
   const src = ASSETS.itemIcons[it.id];
   // 이미지 파일이 없으면 이모지로 대체
-  return `<div class="itemIcon"><img src="${src}" alt="" onerror="this.remove();this.parentNode.textContent='${it.icon}'"></div>`;
+  return `<div class="itemIcon"><img src="${src}" alt="" onerror="var p=this.parentNode;this.remove();p.textContent='${it.icon}'"></div>`;
 }
 
 function itemStatus(idx) {
@@ -342,7 +402,10 @@ function renderShop() {
   });
 }
 
-function openShop()  { state.shopOpen = true;  shopEl.classList.remove("hidden"); renderShop(); }
+function openShop()  {
+  state.shopOpen = true; rightDown = false; player.target = null; player.toKeeper = false;
+  shopEl.classList.remove("hidden"); renderShop();
+}
 function closeShop() { state.shopOpen = false; shopEl.classList.add("hidden"); }
 document.getElementById("shopClose").onclick = closeShop;
 shopEl.addEventListener("mousedown", e => { if (e.target === shopEl) closeShop(); });
@@ -392,15 +455,11 @@ function updateCooldownBar() {
 
 /* ---------------- 업데이트 ---------------- */
 function update(dt) {
-  // 이동 (WASD)
+  // 이동 (우클릭 클릭 이동 / 모바일 조이스틱)
   if (!state.shopOpen && !state.ended) {
     let dx = 0, dy = 0;
-    if (keys["w"]) dy -= 1;
-    if (keys["s"]) dy += 1;
-    if (keys["a"]) dx -= 1;
-    if (keys["d"]) dx += 1;
     let mag = 1;                                         // 속도 비율 (조이스틱은 기울기만큼)
-    if (!dx && !dy && joy.active) {
+    if (!dx && !dy && joy.active && !state.cast) {   // 캐스팅(휘두르는) 중에는 이동 불가
       const jl = Math.hypot(joy.dx, joy.dy);
       if (jl > 0.15) { dx = joy.dx; dy = joy.dy; mag = Math.min(1, jl); }
     }
@@ -408,6 +467,9 @@ function update(dt) {
       const len = Math.hypot(dx, dy);
       player.x += (dx / len) * currentSpeed() * mag * dt;
       player.y += (dy / len) * currentSpeed() * mag * dt;
+      player.target = null; player.toKeeper = false;   // 조이스틱을 쓰면 클릭 이동 취소
+    } else if (!state.cast) {
+      moveToTarget(dt);
     }
     player.x = Math.max(player.r, Math.min(W - player.r, player.x));
     player.y = Math.max(player.r + 40, Math.min(H - player.r, player.y));
@@ -444,6 +506,8 @@ function update(dt) {
     if (state.swing.t <= -0.15) state.swing = null;
   }
 
+  if (clickMarker) { clickMarker.t -= dt; if (clickMarker.t <= 0) clickMarker = null; }
+
   // 떠오르는 골드 텍스트
   for (const f of floaters) { f.t -= dt; f.y -= 40 * dt; }
   for (let i = floaters.length - 1; i >= 0; i--) if (floaters[i].t <= 0) floaters.splice(i, 1);
@@ -451,6 +515,7 @@ function update(dt) {
   updateCooldownBar();
 }
 const floaters = [];
+let clickMarker = null;     // 우클릭한 지점 표시 {x, y, t}
 
 /* ---------------- 그리기 ---------------- */
 function draw() {
@@ -478,6 +543,15 @@ function draw() {
     if (p.growth > 0.02) drawMinion(p, p === hp);
   }
 
+  // 우클릭 이동 지점 표시 (초록 원이 줄어듦)
+  if (clickMarker) {
+    const k = clickMarker.t / 0.5;
+    ctx.strokeStyle = "#8dff8d"; ctx.lineWidth = 3;
+    ctx.globalAlpha = k;
+    ctx.beginPath(); ctx.ellipse(clickMarker.x, clickMarker.y + 14, 8 + 18 * k, (8 + 18 * k) * 0.45, 0, 0, Math.PI * 2); ctx.stroke();
+    ctx.globalAlpha = 1;
+  }
+
   // 상점 주인
   drawKeeper();
 
@@ -500,12 +574,10 @@ function draw() {
   ctx.globalAlpha = 1;
 
   // 상점 근처 안내
-  const overKeeper = Math.hypot(mouse.x - keeper.x, mouse.y - keeper.y) < 45;
-  const near = Math.hypot(player.x - keeper.x, player.y - keeper.y) < CFG.interactRange;
-  if (overKeeper && !state.shopOpen) {
-    ctx.fillStyle = near ? "#8dff8d" : "#ff8d8d";
+  if (overKeeper() && !state.shopOpen) {
+    ctx.fillStyle = "#8dff8d";
     ctx.font = "bold 14px sans-serif"; ctx.textAlign = "center";
-    ctx.fillText(near ? (isTouch ? "탭: 상점 열기" : "우클릭: 상점 열기") : "너무 멀어요", keeper.x, keeper.y - 70);
+    ctx.fillText(isTouch ? "탭: 상점 열기" : "우클릭: 상점 열기", keeper.x, keeper.y - 70);
   }
 }
 
