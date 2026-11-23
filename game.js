@@ -38,7 +38,7 @@ const ASSETS = {
 /* ---------------- 게임 설정값 ---------------- */
 const CFG = {
   baseCooldown: 3,        // 수확 기본 쿨타임(초)
-  spellbladeCdCut: 2,     // 주문 검: 쿨타임 감소량
+  spellbladeCdCut: 2,   // 주문 검: 쿨타임 감소량
   baseSpeed: 200,         // 기본 이동속도(px/s)
   hammerSpeedMul: 1.5,    // 탐식의 망치: 이동속도 +50%
   baseGold: 33,           // 미니언 1마리당 골드
@@ -50,7 +50,7 @@ const CFG = {
 };
 
 const ITEMS = [
-  { id: "spellblade", name: "주문 검",             price: 121,  icon: "🗡️", desc: "수확 쿨타임 2초 감소" },
+  { id: "spellblade", name: "주문 검",             price: 121,  icon: "🗡️", desc: "수확 쿨타임 1.5초 감소" },
   { id: "hammer",     name: "탐식의 망치",         price: 605,  icon: "🔨", desc: "이동속도 50% 증가" },
   { id: "axe",        name: "온기가 필요한 자의 도끼", price: 1111, icon: "🪓", desc: "골드 획득 3배" },
   { id: "trinity",    name: "삼위일체",            price: 3333, icon: "⚜️", desc: "엔딩을 볼 수 있다 (앞의 3개 필요)" },
